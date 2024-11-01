@@ -1,0 +1,75 @@
+name: Trigger Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        default: "Dev"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      parallel_processes:
+        type: string
+        default: "1"
+  workflow_call:
+    inputs:
+      environment:
+        default: "Dev"
+        type: string
+        required: true
+      parallel_processes:
+        type: string
+        default: "1"
+        required: false
+    
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: store build-id  
+        id: prep
+        run: |
+          build_no=12345
+          echo "BUILD_ID=$build_no" >> $GITHUB_OUTPUT
+      
+      - name: evaluating parallel processes - true
+        if: inputs.parallel_processes >= 2
+        run: |
+          echo "parallel=true" >> $GITHUB_ENV
+          echo "output_dir=output/behave" >> "$GITHUB_ENV"
+      
+      - name: evaluating parallel processes - false
+        if: inputs.parallel_processes < 2
+        run: |
+          echo "parallel=false" >> $GITHUB_ENV
+          echo "output_dir=reports" >> "$GITHUB_ENV"
+
+      - name: print message - 1
+        run: |
+            echo "parallel:${{ env.parallel }}"
+            echo "output_dir:${{ env.output_dir }}"
+
+      - name: build and tag image
+        id: build-image
+        run: |
+          echo "Print Build ID from: ${{ steps.prep.outputs.BUILD_ID }}"
+
+  trigger_env_deploy:
+    runs-on: ubuntu-latest
+    needs: [build_push]
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: print message - 2
+        run: |
+            echo "This environment is : ${{ inputs.environment }}"
+            echo "Deploy to : ${{ inputs.environment }}"
+            echo "Environment Variable: ${{ vars.TEST_VAR }}"
+            echo "Environment Secret: ${{ secrets.TEST_SECRET }}"

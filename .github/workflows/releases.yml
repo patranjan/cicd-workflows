@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: print message - 1
+        run: |
+            echo "Build workflow"
+
+  trigger_stage_deploy:
+    needs: [build_push]
+    uses: ./.github/workflows/trigger_deploy.yml
+    with:
+      environment: staging
+      parallel_processes: 10
+    secrets: inherit
+
+  trigger_prod_deploy:
+    needs: [build_push]
+    uses: ./.github/workflows/trigger_deploy.yml
+    with:
+      environment: production
+      parallel_processes: 10
+    secrets: inherit

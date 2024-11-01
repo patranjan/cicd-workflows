@@ -1,0 +1,28 @@
+name: Build/Deploy Dev
+
+on:
+  push:
+    branches:
+      - feature-test
+    
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: print message - 1
+        run: |
+            echo "Build workflow"
+            echo "Environment Variable: ${{ vars.TEST_VAR }}"
+            echo "Environment Secret: ${{ secrets.TEST_SECRET }}"
+
+  trigger_dev_deploy:
+    needs: [build_push]
+    uses: ./.github/workflows/trigger_deploy.yml
+    with:
+      environment: development
+      parallel_processes: 10
+    secrets: inherit
